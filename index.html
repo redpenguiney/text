@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Text</title>
+<style>
+    h1 {color:whitesmoke}
+    body {background-color:rgb(69, 79, 172)}
+    div {background-color: rgb(70, 68, 116)}
+    p {color: whitesmoke}
+</style>
+</head>
+
+<body>
+
+    <h1>TEXT: THE GAME</h1>
+    <p>Hi there!</p>
+
+    <div>
+        <p id = "words"></p>
+
+        <form id = "choice">
+            <input type="text" Input your selected action:>
+        </form>
+        
+    </div>
+
+    <script>
+
+        
+
+        class Action {
+            constructor() {
+                this.execute = function(ctx) {}
+                this.get_description = function() { return "DEFAULT_ACTION_DESC"}
+                this.sort_category = 0
+                this.key = "AUTO"
+            }
+        }
+
+        class Room {
+            constructor() {
+                this.name = "DEFAULT_ROOM_NAME"
+                this.get_available_actions = function() { return []}
+                this.get_description = function() {return "Something about this room feels... incomplete.<br>"}
+            }
+        }
+
+        settingsAction = new Action()
+        settingsAction.get_description = function(ctx) { return "Open settings"}
+        settingsAction.key = "s"
+
+        class Context {
+            constructor() {
+                this.log = "\tYou wake up with a splitting headache, lying down against some hard wall. You're reluctant to open your eyes- Oh dear. This doesn't look like the room you went to bed in.<br><br>"
+                +"\tYou're in what appears to be an old utility room, with bare ceramic walls and flagrant OSHA violations. The only furniture is a bare metal shelf and "
+                +"some weird machine reminiscent of a generator. There's a bit of blood on the - oh, that's yours.<br><br>"
+                +"\tYou get up surprisingly easily - seems you're quite a bit lighter than usual. The only exit is some futuristic metal hatch, next to a locker labeled "
+                +"\"IN CASE OF BREACH\". This all seems to imply that you aren't on Earth.<br><br>"
+                +"What do you do?"
+                +"<br><br>"
+                
+                this.currentRoom = new Room()
+            }
+
+            get_available_actions() {
+                let actions = this.currentRoom.get_available_actions()
+
+                actions.push(settingsAction)
+
+                return actions
+            }
+        }
+
+        let ctx = new Context()
+        
+        function describe_situation() {
+            ctx.log += ctx.currentRoom.get_description();
+
+            let actions = ctx.get_available_actions()
+            let actionStrings = []
+            let i = 1
+            for (let action in actions) {
+                let key = actions[action].key
+                if (key == "AUTO") {
+                    key = i++
+                }
+                actionStrings.push("["+key+"]"+" "+actions[action].get_description(ctx))
+            }
+            for (s in actionStrings) {
+                ctx.log += actionStrings[s] + "<br>"
+            }
+
+            ctx.log += "<br>"
+        }
+        
+        
+
+        const choices = document.getElementById("choice")
+        const log = document.getElementById("words") 
+
+        function refresh_text() {
+            choices[0].value = "" 
+            log.innerHTML = "<p>"+ctx.log+"</p>"
+        }
+
+        function on_input(event) {
+
+            
+
+            if (event && choices[0].value != "") {
+                ctx.log += ">" + choices[0].value + "<br>"
+                let selected = null
+
+                let actions = ctx.get_available_actions()
+                let i = 1
+                for (action in actions) {
+                    let key = actions[action].key
+                    if (key == "AUTO") {
+                        key = i++
+                    }
+                    if (key == choices[0].value) {
+                        selected = actions[action]
+                        break
+                    }
+                }
+
+                if (selected) {
+                    selected.execute(ctx)
+                    describe_situation(ctx)
+                }
+                else {
+                    ctx.log += "Invalid input, please try again.<br><br><i>To select most choices, simply enter the character(s) denoted within [].</i><br><br>"
+                }
+                
+            }
+
+            if (event) {
+                event.preventDefault();
+            }
+
+            refresh_text();
+        }
+        choices.addEventListener("submit", on_input)
+        describe_situation();
+        refresh_text();
+       
+    </script>
+    <noscript><p>No JavaScript support?<br>You leave this place, never to return. Pathetic wretch.</p></noscript>
+
+</body>
+</html>
+
