@@ -35,6 +35,7 @@
                 this.get_description = function() { return "DEFAULT_ACTION_DESC"}
                 this.sort_category = 0
                 this.key = "AUTO"
+                this.undoable = true
             }
         }
 
@@ -49,24 +50,35 @@
         settingsAction = new Action()
         settingsAction.get_description = function(ctx) { return "Open settings"}
         settingsAction.key = "s"
+        // settingsAction.undoable = false
+        backInHistoryAction = new Action()
+        backInHistoryAction.get_description = function(ctx) { return "Wait, run it back"}
+        backInHistoryAction.key = "U"
+        backInHistoryAction.undoable = false // can't undo your undos lol
 
         class Context {
             constructor() {
                 this.log = "\tYou wake up with a splitting headache, lying down against some hard wall. You're reluctant to open your eyes- Oh dear. This doesn't look like the room you went to bed in.<br><br>"
                 +"\tYou're in what appears to be an old utility room, with bare ceramic walls and flagrant OSHA violations. The only furniture is a bare metal shelf and "
                 +"some weird machine reminiscent of a generator. There's a bit of blood on the - oh, that's yours.<br><br>"
-                +"\tYou get up surprisingly easily - seems you're quite a bit lighter than usual. The only exit is some futuristic metal hatch, next to a locker labeled "
-                +"\"IN CASE OF BREACH\". This all seems to imply that you aren't on Earth.<br><br>"
+                +"\t<br><br>"
                 +"What do you do?"
                 +"<br><br>"
                 
                 this.currentRoom = new Room()
+
+                this.previous = null
+
+                this.turnId = 0
             }
 
             get_available_actions() {
                 let actions = this.currentRoom.get_available_actions()
 
                 actions.push(settingsAction)
+                if (this.previous) {
+                    actions.push(backInHistoryAction)
+                }
 
                 return actions
             }
@@ -91,10 +103,14 @@
                 ctx.log += actionStrings[s] + "<br>"
             }
 
+            ctx.log += "<br>id = " + ctx.turnId+++ "<br>"
             ctx.log += "<br>"
         }
         
-        
+        backInHistoryAction.execute = function(_) {
+            ctx = ctx.previous
+            ctx.log += "After careful consideration, you decided doing that would have been dumb.<br><br>"
+        }
 
         const choices = document.getElementById("choice")
         const log = document.getElementById("words") 
@@ -109,7 +125,7 @@
             
 
             if (event && choices[0].value != "") {
-                ctx.log += ">" + choices[0].value + "<br>"
+                ctx.log += "&gt" + choices[0].value + "<br>"
                 let selected = null
 
                 let actions = ctx.get_available_actions()
@@ -126,6 +142,24 @@
                 }
 
                 if (selected) {
+                    if (selected.undoable) {
+                        alert("Bkacup")
+                        function good_copy(obj) { // bruh no copying functions with std stuff
+                            let out = new Context()
+                            for (key in obj) {
+                                if (typeof(obj[key]) == "object") {
+                                    out[key] = good_copy(obj[key])
+                                }
+                                else {
+                                    out[key] = obj[key]
+                                }
+                            }
+                            return out
+                        }
+
+                        backup = good_copy(ctx)
+                        ctx.previous = backup
+                    }
                     selected.execute(ctx)
                     describe_situation(ctx)
                 }
