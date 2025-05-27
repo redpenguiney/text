@@ -26,9 +26,6 @@
     </div>
 
     <script>
-
-        
-
         class Action {
             constructor() {
                 this.execute = function(ctx) {}
@@ -36,6 +33,7 @@
                 this.sort_category = 0
                 this.key = "AUTO"
                 this.undoable = true
+                this.incrementTurnid = true
             }
         }
 
@@ -47,21 +45,37 @@
             }
         }
 
+        // city centre, shopping centre, apartments,  
+
+        cityCentreRoom = new Room()
+
         settingsAction = new Action()
         settingsAction.get_description = function(ctx) { return "Open settings"}
         settingsAction.key = "s"
+        settingsAction.execute = function(ctx) { ctx.log += "settings have opened<br>"}
         // settingsAction.undoable = false
         backInHistoryAction = new Action()
         backInHistoryAction.get_description = function(ctx) { return "Wait, run it back"}
         backInHistoryAction.key = "U"
         backInHistoryAction.undoable = false // can't undo your undos lol
+        backInHistoryAction.incrementTurnid = false
+
+        
 
         class Context {
             constructor() {
-                this.log = "\tYou wake up with a splitting headache, lying down against some hard wall. You're reluctant to open your eyes- Oh dear. This doesn't look like the room you went to bed in.<br><br>"
-                +"\tYou're in what appears to be an old utility room, with bare ceramic walls and flagrant OSHA violations. The only furniture is a bare metal shelf and "
-                +"some weird machine reminiscent of a generator. There's a bit of blood on the - oh, that's yours.<br><br>"
-                +"\t<br><br>"
+                this.log = "\t<i>\"Two minutes to arrival at Pentyne Station,\"</i> the train systems chirp. <i>\"If this is your stop, please prepare to disembark with all of your belongings</i>\".<br><br>"
+                +"\tBefore putting the mission file back in your briefcase, you give it one last cursory glance:<br><br>"
+                +"<center>INQUIRY NO. 403861<br>RESTRICTED ACCESS: MAY CONTAIN INFORMATION PERTINENT TO NATIONAL SECURITY<br>DO NOT TRANSFER TO UNAUTHORIZED PARTIES<br><br></center>"
+                +"Dear agent,<br><br>\tThe Internal Economics Council has asked the Party Investigation Division to take a look at certain anomalous economic data in the city of Burger (pop. 1782718). "
+                +"Analytics suspects extremely high levels of graft as the primary cause, possibly with some level of dealing with the Nugynt insurgency.<br><br>"
+                +"\tYour job is to confirm or deny this theory and, more broadly speaking, evalute the general situation in Burger and suggest corrective measures. "
+                +"Given the military and cultural significance of Burger to the Nation, this task has been deemed Priority Two. You are expected to provide weekly reports with your first report to be sent the Friday after today. "
+                +"As per PID & 52.a.3, should you need additional material to complete this mission, request it immediately. "
+                +"The remainder of this report is a brief summary of the relevant economic data as well as various information considered relevant to your investigation."
+                +"<br><br>"
+                +"The report streches on for some fifty pages after that. You get up as the train comes to a stop. "
+                +"Five minutes later, you are standing outside Burger station. <br><br>"
                 +"What do you do?"
                 +"<br><br>"
                 
@@ -70,6 +84,8 @@
                 this.previous = null
 
                 this.turnId = 0
+
+                this.time = 0 // in seconds
             }
 
             get_available_actions() {
@@ -103,13 +119,17 @@
                 ctx.log += actionStrings[s] + "<br>"
             }
 
-            ctx.log += "<br>id = " + ctx.turnId+++ "<br>"
+            
+            ctx.log += "<br>id = " + ctx.turnId + "<br>"
+            
             ctx.log += "<br>"
         }
         
         backInHistoryAction.execute = function(_) {
+            alert(ctx.turnId)
             ctx = ctx.previous
             ctx.log += "After careful consideration, you decided doing that would have been dumb.<br><br>"
+            alert(ctx.turnId)
         }
 
         const choices = document.getElementById("choice")
@@ -121,9 +141,6 @@
         }
 
         function on_input(event) {
-
-            
-
             if (event && choices[0].value != "") {
                 ctx.log += "&gt" + choices[0].value + "<br>"
                 let selected = null
@@ -143,7 +160,6 @@
 
                 if (selected) {
                     if (selected.undoable) {
-                        alert("Bkacup")
                         function good_copy(obj) { // bruh no copying functions with std stuff
                             let out = new Context()
                             for (key in obj) {
@@ -161,7 +177,10 @@
                         ctx.previous = backup
                     }
                     selected.execute(ctx)
-                    describe_situation(ctx)
+                    if (selected.incrementTurnid) { 
+                        ctx.turnId++
+                        describe_situation(ctx)
+                    }
                 }
                 else {
                     ctx.log += "Invalid input, please try again.<br><br><i>To select most choices, simply enter the character(s) denoted within [].</i><br><br>"
