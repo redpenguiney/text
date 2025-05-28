@@ -40,21 +40,205 @@
         class Room {
             constructor() {
                 this.name = "DEFAULT_ROOM_NAME"
-                this.get_available_actions = function() { return []}
-                this.get_description = function() {return "Something about this room feels... incomplete.<br>"}
+                this.get_available_actions = function(ctx) { return []}
+                this.get_description = function(ctx) {return "Something about this room feels... incomplete.<br>"}
             }
         }
 
-        // city centre, shopping centre, apartments,  
+        function MakeOutdoorRoom(name, get_desc, get_actions) {
+            let r = new Room()
+            r.name = name
+            r.get_available_actions = get_actions
+            r.get_description = function(ctx) {
+                return ctx.get_outdoor_weather_description() + get_desc(ctx)
+            }
+            return r
+        }
 
-        cityCentreRoom = new Room()
+        function formatTime(seconds) {
+            let hours = Math.floor(seconds/3600)
+            seconds %= 3600
+            let minutes = Math.floor(seconds/60)
+            seconds %= 60
+            seconds = Math.floor(seconds)
+            let str = ""
+            if (hours > 0) {
+                str += hours + ":"
+                if (minutes < 10) {
+                    str += "0"
+                }
+            }
+            str += minutes + ":"
+            if (seconds < 10) {
+                str += "0"
+            }
+            str += seconds
+            return str
+        }
 
-        settingsAction = new Action()
+        function MakeTraversalAction(baseTime, destName, destRoom) {
+            let a = new Action()
+            a.sort_category = 7
+            a.execute = function(ctx) {
+                ctx.currentRoom = destRoom
+                ctx.time += baseTime
+            }
+            a.get_description = function(ctx) {
+                return "Travel " + destName + " (" + formatTime(baseTime) + ")" 
+            }
+            return a
+        }
+
+        // city centre, shopping centre, middle class apartments/offices
+            // beach
+        // suburbs, less urban businesses  
+        // ghetto apartments, docks, industry
+
+
+        let cityCentreRoom, shoppingCentreRoom, richApartmentsRoom, beachRoom, suburbsRoom, businessesRoom, poorApartmentsRoom, docksRoom, industrialRoom
+        cityCentreRoom = MakeOutdoorRoom("CITY_CENTRE", 
+        function(ctx) {
+            return "You are in the administrative centre of Burger. City hall, the police station, and various bureaucratic offices are located here, not to mention the train station you arrived here from.<br><br>"
+        },
+        function(ctx) {
+            return [
+                MakeTraversalAction(300, " to shopping centre", shoppingCentreRoom),
+                MakeTraversalAction(300, " to nice apartments and offices", richApartmentsRoom),
+
+                MakeTraversalAction(300, " to riparian beach", beachRoom),
+
+                MakeTraversalAction(600, " to suburbs", suburbsRoom),
+                MakeTraversalAction(600, " to business centre", businessesRoom),
+            ]
+        }
+        )
+        shoppingCentreRoom = MakeOutdoorRoom("SHOPPING_CENTRE", 
+        function(ctx) {
+            let str = "The section of the city you're in is dominated by an enormous, partially outdoor, shopping mall and public center."
+            str +=  "Despite the obvious signs of decline, it seems very busy.<br><br>"
+        },
+        function(ctx) {
+            return [
+                MakeTraversalAction(300, " to city centre", cityCentreRoom),
+                MakeTraversalAction(300, " to nice apartments and offices", richApartmentsRoom),
+
+                MakeTraversalAction(300, " to riparian beach", beachRoom),
+
+                MakeTraversalAction(600, " to suburbs", suburbsRoom),
+                MakeTraversalAction(600, " to business centre", businessesRoom),
+            ]
+        }
+        )
+        richApartmentsRoom = MakeOutdoorRoom("RICH_APARTMENTS",
+        function(ctx) {
+            return "You find yourselves among nondescript city blocks with respectable-looking highrises, including both apartments and offices. You could find a nice hotel here.<br><br>"
+        },
+        function (ctx) {
+            return [
+                MakeTraversalAction(300, " to city centre", cityCentreRoom),
+                MakeTraversalAction(300, " to shopping centre", shoppingCentreRoom),
+
+                MakeTraversalAction(300, " to riparian beach", beachRoom),
+
+                MakeTraversalAction(600, " to suburbs", suburbsRoom),
+                MakeTraversalAction(600, " to business centre", businessesRoom),
+            ]
+        }
+        )
+        beachRoom = MakeOutdoorRoom("BEACH", 
+        function(ctx) {
+            let str =  "You're on a sandy beach where Burger meets the Amog River. There's a creepy-looking cafe and a shack selling assorted beach paraphernalia. Farther down the beach is a marina and boat rental place.<br><br>"
+            return str
+        },
+        function(ctx) {
+            return [
+                MakeTraversalAction(300, " to city centre", cityCentreRoom),
+                MakeTraversalAction(300, " to shopping centre", shoppingCentreRoom),
+                MakeTraversalAction(300, " to nice apartments and offices", richApartmentsRoom),
+
+                MakeTraversalAction(300, " to suburbs", suburbsRoom),
+                MakeTraversalAction(300, " to business centre", businessesRoom),
+            ]
+        }
+        )
+        suburbsRoom = MakeOutdoorRoom("SUBURBS",
+        function(ctx) {
+            let str = "You find yourself in the lower-density residential parts of Burger. A mixture of townhouses, small apartment units, and single-family homes surrounds you.<br><br>"
+            return str
+        },
+        function(ctx) {
+            return [
+                MakeTraversalAction(300, " to business centre", businessesRoom),
+
+                MakeTraversalAction(300, " to riparian beach", beachRoom),
+            
+                MakeTraversalAction(600, " to city centre", cityCentreRoom),
+                MakeTraversalAction(600, " to shopping centre", shoppingCentreRoom),
+                MakeTraversalAction(600, " to nice apartments and offices", richApartmentsRoom),
+
+                MakeTraversalAction(600, " to low-income residential area", poorApartmentsRoom),
+                MakeTraversalAction(600, " to industrial district", industrialRoom)
+            ]
+        }
+        )
+        businessesRoom = MakeOutdoorRoom("BUSINESS_CENTRE",
+        function(ctx) {
+            let str = "You are surrounded by stores, small offices, and a sea of asphalt parking lots. You could find a low-key motel here.<br><br>"
+            return str
+        },
+        function(ctx) {
+            return [
+                MakeTraversalAction(300, " to suburbs", suburbsRoom),
+
+                MakeTraversalAction(300, " to riparian beach", beachRoom),
+            
+                MakeTraversalAction(600, " to city centre", cityCentreRoom),
+                MakeTraversalAction(600, " to shopping centre", shoppingCentreRoom),
+                MakeTraversalAction(600, " to nice apartments and offices", richApartmentsRoom),
+
+                MakeTraversalAction(600, " to low-income residential area", poorApartmentsRoom),
+                MakeTraversalAction(600, " to industrial district", industrialRoom)
+            ]
+        }
+        )
+        poorApartmentsRoom = MakeOutdoorRoom("GHETTO", 
+        function(ctx) {
+            let str = "You find yourself in the less fortunate side of the town, with shoddy housing and few homes. Most of the people living here work in the nearby industrial district.<br>"
+            str += "Best not to linger here.<br><br>"
+            return str
+        },
+        function(ctx) {
+            return [
+            MakeTraversalAction(600, " to suburbs", suburbsRoom),
+            MakeTraversalAction(600, " to business centre", businessesRoom),
+
+            MakeTraversalAction(300, " to industrial district", industrialRoom)
+            ]
+        }
+        )
+        industrialRoom = MakeOutdoorRoom("INDUSTRIAL_DISTRICT", 
+        function(ctx) {
+            let str = "You find yourself in Burger's industrial district. Its steel and chemical plants are vital to the nation's military-industrial complex.<br>"
+            str += "Nonetheless, urban reform has not followed the economic resurgence. Best not to linger here.<br><br>"
+            return str
+        },
+        function(ctx) {
+            return [
+            MakeTraversalAction(600, " to suburbs", suburbsRoom),
+            MakeTraversalAction(600, " to business centre", businessesRoom),
+
+            MakeTraversalAction(300, " to low-income residential area", poorApartmentsRoom)
+            ]
+        }
+        )
+
+
+        let settingsAction = new Action()
         settingsAction.get_description = function(ctx) { return "Open settings"}
         settingsAction.key = "s"
         settingsAction.execute = function(ctx) { ctx.log += "settings have opened<br>"}
         // settingsAction.undoable = false
-        backInHistoryAction = new Action()
+        let backInHistoryAction = new Action()
         backInHistoryAction.get_description = function(ctx) { return "Wait, run it back"}
         backInHistoryAction.key = "U"
         backInHistoryAction.undoable = false // can't undo your undos lol
@@ -79,7 +263,7 @@
                 +"What do you do?"
                 +"<br><br>"
                 
-                this.currentRoom = new Room()
+                this.currentRoom = cityCentreRoom
 
                 this.previous = null
 
@@ -98,12 +282,16 @@
 
                 return actions
             }
+
+            get_outdoor_weather_description() {
+                return "It's a beautiful day in Burger.<br><br>"
+            }
         }
 
         let ctx = new Context()
         
         function describe_situation() {
-            ctx.log += ctx.currentRoom.get_description();
+            ctx.log += ctx.currentRoom.get_description(ctx);
 
             let actions = ctx.get_available_actions()
             let actionStrings = []
@@ -126,10 +314,8 @@
         }
         
         backInHistoryAction.execute = function(_) {
-            alert(ctx.turnId)
             ctx = ctx.previous
             ctx.log += "After careful consideration, you decided doing that would have been dumb.<br><br>"
-            alert(ctx.turnId)
         }
 
         const choices = document.getElementById("choice")
